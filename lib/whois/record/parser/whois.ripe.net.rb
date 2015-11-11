@@ -8,24 +8,22 @@
 
 
 require 'whois/record/parser/base'
+require 'whois/record/scanners/whois.ripe.net.rb'
 
 
 module Whois
   class Record
     class Parser
 
-      #
-      # = whois.ripe.net parser
-      #
       # Parser for the whois.ripe.net server.
-      #
-      # NOTE: This parser is just a stub and provides only a few basic methods
-      # to check for domain availability and get domain status.
-      # Please consider to contribute implementing missing methods.
-      # See WhoisNicIt parser for an explanation of all available methods
-      # and examples.
-      #
       class WhoisRipeNet < Base
+        include Scanners::Scannable
+
+        self.scanner = Scanners::WhoisRipeNet
+
+        property_supported :domain do
+          node('domain')['domain:'] if node('domain')
+        end
 
         property_supported :status do
           if available?
@@ -43,28 +41,62 @@ module Whois
           !available?
         end
 
+        property_supported :registrant_contacts do
+          build_contact("organisation", Whois::Record::Contact::TYPE_REGISTRANT)
+        end
 
-        property_not_supported :created_on
+        property_supported :admin_contacts do
+          build_contact("administrative", Whois::Record::Contact::TYPE_ADMINISTRATIVE)
+        end
 
-        property_not_supported :updated_on
+        property_supported :technical_contacts do
+          build_contact("technical", Whois::Record::Contact::TYPE_TECHNICAL)
+        end
+
+        property_supported :created_on do
+          node('domain') { |raw| Time.parse(raw['created:']) } if node('domain')
+          node('inetnum') { |raw| Time.parse(raw['created:']) } if node('inetnum')
+        end
+
+        property_supported :updated_on do
+          node('domain') { |raw| Time.parse(raw['last-modified:']) } if node('domain')
+          node('inetnum') { |raw| Time.parse(raw['last-modified:']) } if node('inetnum')
+        end
 
         property_not_supported :expires_on
 
-
-        # Nameservers are listed in the following formats:
-        #
-        #   nserver:      ns.nic.mc
-        #   nserver:      ns.nic.mc 195.78.6.131
-        #
         property_supported :nameservers do
-          content_for_scanner.scan(/nserver:\s+(.+)\n/).flatten.map do |line|
-            name, ipv4 = line.split(/\s+/)
-            Record::Nameserver.new(:name => name.downcase, :ipv4 => ipv4)
+          node("domain") do |raw|
+            (raw["nserver:"] || "").split("\n").map do |line|
+              name, ipv4 = line.downcase.split(/\s+/)
+              Record::Nameserver.new(:name => name, :ipv4 => ipv4)
+            end
           end
         end
 
-      end
+        property_supported :inetnum do
+          node('inetnum')['inetnum:'] if node('inetnum')
+        end
 
+        private
+        def build_contact(element, type)
+          node(element) do |raw|
+            if raw["organisation:"] != "Not assigned"
+              Record::Contact.new(
+                type:         type,
+                name:         raw["org-name:"],
+                organization: raw["organisation:"],
+                address:      raw['address:'],
+                phone:        raw["phone:"],
+                fax:          raw["fax-no:"],
+                email:        raw["e-mail:"],
+                created_on:   raw['created:'],
+                updated_on:   raw['last-modified:']
+              )
+            end
+          end
+        end
+      end
     end
   end
 end

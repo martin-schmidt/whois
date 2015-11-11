@@ -35,7 +35,7 @@ module Whois
         :created_on, :updated_on, :expires_on,
         :registrar,
         :registrant_contacts, :admin_contacts, :technical_contacts,
-        :nameservers,
+        :nameservers, :inetnum
       ]
 
       PROPERTY_STATE_NOT_IMPLEMENTED = :not_implemented
