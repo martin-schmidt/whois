@@ -36,18 +36,20 @@ module Whois
     # @attr [String] fax
     # @attr [String] email
     # @attr [String] url - e. g. to the contact form
+    # @attr [boolean] role - true if contact is role account
     # @attr [Time] created_on
     # @attr [Time] updated_on
     #
     class Contact < SuperStruct.new(:id, :type, :name, :organization,
                                     :address, :city, :zip, :state, :country, :country_code,
                                     :phone, :fax, :email, :url,
+                                    :role,
                                     :created_on, :updated_on)
 
       TYPE_REGISTRANT     = 1
       TYPE_ADMINISTRATIVE = 2
       TYPE_TECHNICAL      = 3
-
+      TYPE_ZONE           = 4
 
       def self.const_missing(name)
         case name

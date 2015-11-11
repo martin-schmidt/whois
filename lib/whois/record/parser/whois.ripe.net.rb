@@ -21,8 +21,10 @@ module Whois
 
         self.scanner = Scanners::WhoisRipeNet
 
+        property_not_supported :expires_on
+
         property_supported :domain do
-          node('domain')['domain:'] if node('domain')
+          ast.first[1]['domain:']
         end
 
         property_supported :status do
@@ -41,33 +43,54 @@ module Whois
           !available?
         end
 
-        property_supported :registrant_contacts do
-          build_contact("organisation", Whois::Record::Contact::TYPE_REGISTRANT)
-        end
-
         property_supported :admin_contacts do
-          build_contact("administrative", Whois::Record::Contact::TYPE_ADMINISTRATIVE)
+          node(ast.first[0]) do |raw|
+            (raw['admin-c:'] || '').split("\n").map do |handle|
+              build_contact(handle, Whois::Record::Contact::TYPE_ADMINISTRATIVE)
+            end
+          end
         end
 
         property_supported :technical_contacts do
-          build_contact("technical", Whois::Record::Contact::TYPE_TECHNICAL)
+          node(ast.first[0]) do |raw|
+            (raw['tech-c:'] || '').split("\n").map do |handle|
+               build_contact(handle, Whois::Record::Contact::TYPE_TECHNICAL)
+            end
+          end
+        end
+
+        property_supported :zone_contacts do
+          node(ast.first[0]) do |raw|
+            (raw['zone-c:'] || '').split("\n").map do |handle|
+              build_contact(handle, Whois::Record::Contact::TYPE_ZONE)
+            end
+          end
         end
 
         property_supported :created_on do
-          node('domain') { |raw| Time.parse(raw['created:']) } if node('domain')
-          node('inetnum') { |raw| Time.parse(raw['created:']) } if node('inetnum')
+          Time.parse(ast.first[1]['created:'])
         end
 
         property_supported :updated_on do
-          node('domain') { |raw| Time.parse(raw['last-modified:']) } if node('domain')
-          node('inetnum') { |raw| Time.parse(raw['last-modified:']) } if node('inetnum')
+          Time.parse(ast.first[1]['last-modified:'])
         end
 
-        property_not_supported :expires_on
+        property_supported :description do
+          ast.first[1]['descr:']
+        end
 
+        property_supported :country do
+          ast.first[1]['country:']
+        end
+
+        property_supported :source do
+          ast.first[1]['source:']
+        end
+
+        # for domains under .e164.arpa
         property_supported :nameservers do
-          node("domain") do |raw|
-            (raw["nserver:"] || "").split("\n").map do |line|
+          node(ast.first[0]) do |raw|
+            (raw['nserver:'] || '').split("\n").map do |line|
               name, ipv4 = line.downcase.split(/\s+/)
               Record::Nameserver.new(:name => name, :ipv4 => ipv4)
             end
@@ -75,26 +98,34 @@ module Whois
         end
 
         property_supported :inetnum do
-          node('inetnum')['inetnum:'] if node('inetnum')
+          ast.first[1]['inetnum:']
+        end
+
+        property_supported :handle do
+          ast.first[1]['netname:']
+        end
+
+        property_supported :organization do
+          ast.first[1]['org:']
         end
 
         private
-        def build_contact(element, type)
-          node(element) do |raw|
-            if raw["organisation:"] != "Not assigned"
-              Record::Contact.new(
-                type:         type,
-                name:         raw["org-name:"],
-                organization: raw["organisation:"],
-                address:      raw['address:'],
-                phone:        raw["phone:"],
-                fax:          raw["fax-no:"],
-                email:        raw["e-mail:"],
-                created_on:   raw['created:'],
-                updated_on:   raw['last-modified:']
-              )
-            end
-          end
+        def build_contact(handle, type)
+          section, hash = ast.find{|k,v| v['nic-hdl:'] == handle}
+          role = section =~ /^role-\d+/ ? true : false
+          Record::Contact.new(
+            type:         type,
+            role:         role,
+            id:           hash['nic-hdl:'],
+            name:         hash['person:'],
+            organization: hash['organisation:'],
+            address:      hash['address:'],
+            phone:        hash['phone:'],
+            fax:          hash['fax-no:'],
+            email:        hash['e-mail:'] || hash['abuse-mailbox:'],
+            created_on:   Time.parse(hash['created:']),
+            updated_on:   Time.parse(hash['last-modified:'])
+          )
         end
       end
     end

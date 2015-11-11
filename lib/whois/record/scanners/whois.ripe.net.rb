@@ -18,30 +18,20 @@ module Whois
 
         self.tokenizers += [
           :skip_empty_line,
-          :scan_disclaimer,
+          :skip_comment,
           :scan_section,
         ]
 
 
-        tokenizer :scan_disclaimer do
-          if @input.match?(/^\%(.*?)\n/)
-            @ast["Disclaimer"] = _scan_lines_to_array(/\%(.*?)\n/).select { |line| line =~ /\w+/ }.join(" ")
-          end
+        tokenizer :skip_comment do
+          @input.skip(/^\%(.*?)\n/)
         end
 
         tokenizer :scan_section do
           if @input.scan(/^(.+:)(.+)\n/)
-            # Adapt the section's name depending on the first line
-            section = case @input[1].strip.chomp(':')
-                      when 'contact'
-                        @input[2].strip # use the contact type name as identifier
-                      when 'created', 'last-modified'
-                        'dates'
-                      when 'nserver'
-                        'nameservers'
-                      else
-                        @input[1].strip.chomp(':') # Default name is the first label found
-                      end
+            # Since there can be more than one section with the same first key
+            # (see `whois 5.8.5.5`), we need an identifier.
+            section = "#{@input[1].strip.chomp(':')}-#{Time.now.to_f.to_s.delete('.')}"
 
             content = parse_section_pairs
             @input.match?(/\n+/) || error("Unexpected end of section")
