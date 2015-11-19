@@ -341,7 +341,7 @@
     "host": "whois.ripe.net"
   },
   "177.0.0.0/8": {
-    "host": "whois.lacnic.net"
+    "host": "whois.registro.br"
   },
   "178.0.0.0/8": {
     "host": "whois.ripe.net"
@@ -371,7 +371,7 @@
     "host": "whois.ripe.net"
   },
   "189.0.0.0/8": {
-    "host": "whois.lacnic.net"
+    "host": "whois.registro.br"
   },
   "190.0.0.0/7": {
     "host": "whois.lacnic.net"
