@@ -102,7 +102,6 @@ module Whois
         end
 
         property_supported :inet6num do
-          binding.pry
           ast.first[1]['inet6num:']
         end
 
