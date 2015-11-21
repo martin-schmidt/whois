@@ -101,6 +101,11 @@ module Whois
           ast.first[1]['inetnum:']
         end
 
+        property_supported :inet6num do
+          binding.pry
+          ast.first[1]['inet6num:']
+        end
+
         property_supported :handle do
           ast.first[1]['netname:']
         end

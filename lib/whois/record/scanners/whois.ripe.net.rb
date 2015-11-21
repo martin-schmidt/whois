@@ -28,7 +28,7 @@ module Whois
         end
 
         tokenizer :scan_section do
-          if @input.scan(/^(.+:)(.+)\n/)
+          if @input.scan(/^(.+:)(\s.+)\n/)
             # Since there can be more than one section with the same first key
             # (see `whois 5.8.5.5`), we need an identifier.
             section = "#{@input[1].strip.chomp(':')}-#{Time.now.to_f.to_s.delete('.')}"
