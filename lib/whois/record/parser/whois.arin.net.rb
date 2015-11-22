@@ -54,6 +54,10 @@ module Whois
           node('NetRange')['NetRange']
         end
 
+        property_supported :cidr do
+          node('NetRange')['CIDR']
+        end
+
         property_supported :organization do
           node('NetRange')['Organization']
         end
