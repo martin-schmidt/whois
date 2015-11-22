@@ -37,7 +37,7 @@ module Whois
         :registrant_contacts, :admin_contacts, :technical_contacts,
         :zone_contacts,
         :nameservers,
-        :inetnum, :cidr, :handle, :description, :country, :source, :organization
+        :inetnum, :inet6num, :cidr, :handle, :description, :country, :source, :organization
       ]
 
       PROPERTY_STATE_NOT_IMPLEMENTED = :not_implemented
